@@ -73,6 +73,7 @@ describe("Console Credits Tests", function () {
 	// whitelistPerson_4 has 1000 tokens, 2x Vault and 2x Upgrade
 	// randomPerson has nothing
 	
+	// keccak256(abi.encodePacked(msg.sender, _baseValueString, packedNFTs));
 	vaultObjects = [{
 		token_id:'0',
 		nft_type:'Vault',
@@ -97,7 +98,6 @@ describe("Console Credits Tests", function () {
 		airdrops:"3"
 	}];
 	
-	
 	// Convert to String
 	merkleProofData = [
 		whitelistPerson.address.toLowerCase() + "1000", // Has 1000 tokens
@@ -113,7 +113,8 @@ describe("Console Credits Tests", function () {
 	
 	// Push rootHash to Resolver contract
 	await resolverContract.connect(owner).setRootHash(rootHash);
-
+	
+	
   });
 	
 	
@@ -208,6 +209,38 @@ describe("Console Credits Tests", function () {
 	
   });
   
+  it("Should claim Airdrop tokens using an Upgrade", async function () {
+	
+	let claimingAddress = leafNodes[2]; // 2 is whitelistPerson_3
+	let hexProof = merkleTree.getHexProof(claimingAddress);
+	
+	let mintTokens = await resolverContract.connect(whitelistPerson_3).claimAirdrop(hexProof, 1000, [upgradeObjects[0]]);
+	await mintTokens.wait();
+	
+	// Check balance of whitelistPerson after the claim
+	let balanceOf = await creditsContract.balanceOf(whitelistPerson_3.address);
+    console.log("Balance after the first claim: " + whitelistPerson_3.address + " is " + balanceOf);
+	
+  });
+  
+  it("Should try to claim Airdrop tokens using an Upgrade twice and fail", async function () {
+	
+	let claimingAddress = leafNodes[2]; // 2 is whitelistPerson_3
+	let hexProof = merkleTree.getHexProof(claimingAddress);
+	
+	let mintTokens = await resolverContract.connect(whitelistPerson_3).claimAirdrop(hexProof, 1000, [upgradeObjects[0]]);
+	await mintTokens.wait();
+	
+	// Check balance of whitelistPerson after the claim
+	let balanceOf = await creditsContract.balanceOf(whitelistPerson_3.address);
+    console.log("Balance after the first claim: " + whitelistPerson_3.address + " is " + balanceOf);
+	
+	// Try to claim twice
+	await expect(resolverContract.connect(whitelistPerson_3).claimAirdrop(hexProof, 1000, [upgradeObjects[0]]))
+          .to.be.revertedWith('Token already used in airdrop');
+	
+  });
+  
   it("Should try to transfer tokens and fail", async function () {
 	
 	let claimingAddress = leafNodes[0]; // 0 is whitelistPerson
@@ -222,8 +255,6 @@ describe("Console Credits Tests", function () {
 	
 	await expect(creditsContract.connect(whitelistPerson).transfer(whitelistPerson_2.address, 100))
           .to.be.revertedWith('Contract paused');
-	
-	// await creditsContract.connect(whitelistPerson).transfer(whitelistPerson_2.address, 100);
 	
   });
   
@@ -248,5 +279,6 @@ describe("Console Credits Tests", function () {
     console.log("Balance after receiving tokens: " + whitelistPerson_2.address + " is " + balanceOfSecond);
 	
   });
+	
 	
 });
