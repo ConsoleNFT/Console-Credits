@@ -247,6 +247,12 @@ contract Console_Credits_Resolver_V1 is ReentrancyGuard, Ownable {
 		
     }
 	
+	function getClaimedAirdropTokens(uint token_id) public view returns (bool) {
+		
+		return _claimedAirdropTokens[token_id];
+		
+    }
+	
 	// Helpers
 	function stringCheck(string memory a, string memory b) public pure returns (bool) {
         return keccak256(abi.encodePacked(a)) == keccak256(abi.encodePacked(b));
