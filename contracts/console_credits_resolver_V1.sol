@@ -54,14 +54,18 @@ import "hardhat/console.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 
 interface IConsoleCredits {
   function getNumberOfClaimedTokens(address _address) external view returns (uint);
   function mintTokens(address _receiver, uint _addBaseValue, uint _tokensToMint) external;
 }
 
-contract Console_Credits_Resolver_V1 is ReentrancyGuard, Ownable {
-
+contract Console_Credits_Resolver_V1 is ReentrancyGuard, Ownable, AccessControl {
+	
+	// Roles
+    bytes32 public constant BOT_ROLE = keccak256("BOT_ROLE");
+	
     address CreditsAddress;
 
     bytes32 public _rootHash;
@@ -84,10 +88,15 @@ contract Console_Credits_Resolver_V1 is ReentrancyGuard, Ownable {
     }
 
     constructor(address _CreditsAddress) {
+		
+		_setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
+		_setupRole(BOT_ROLE, _msgSender());
+		
 		CreditsAddress = _CreditsAddress;
+		
     }
 	
-	function setRootHash(bytes32 rootHash) external nonReentrant onlyOwner {
+	function setRootHash(bytes32 rootHash) external nonReentrant onlyRole(BOT_ROLE) {
 		_rootHash = rootHash;
 	}
 
@@ -173,6 +182,9 @@ contract Console_Credits_Resolver_V1 is ReentrancyGuard, Ownable {
 
             _tokensToMint += 10000 * (airdrops + 1);
         }
+		
+		// Load the Credits Contract
+        CreditsContract = IConsoleCredits(CreditsAddress);
 		
         CreditsContract.mintTokens(msg.sender, 0, _tokensToMint);
 
