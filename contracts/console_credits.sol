@@ -26,13 +26,13 @@ contract Console_Credits is ERC20, ReentrancyGuard, Ownable, AccessControl {
 
         claimedTokensBaseValue[_receiver] += _addBaseValue;
 
-        _mint(_receiver, _tokensToMint);
+        _mint(_receiver, _tokensToMint * 1 ether);
 
     }
 
     function burnTokens(address _receiver, uint _amount) external nonReentrant onlyRole(ALLOWED_ROLE) {
 
-        _burn(_receiver, _amount);
+        _burn(_receiver, _amount * 1 ether);
 
     }
 
