@@ -59,10 +59,17 @@ describe("Console Credits Tests", function () {
     await resolverContract.deployed();
     console.log("Console Credits Resolver V1 contract deployed to:", resolverContract.address);
 	
+	// Deploy Spender with Credits address as constructor arg
+	spenderContractFactory = await hre.ethers.getContractFactory("Console_Credits_Spender_V1");
+    spenderContract = await spenderContractFactory.deploy(creditsContract.address);
+    await spenderContract.deployed();
+    console.log("Console Credits Spender V1 contract deployed to:", spenderContract.address);
+	
 	// Contract Role set up
 	ALLOWED_ROLE = hre.ethers.utils.id("ALLOWED_ROLE");
 
     await creditsContract.grantRole(ALLOWED_ROLE,resolverContract.address);
+    await creditsContract.grantRole(ALLOWED_ROLE,spenderContract.address);
 	
 	
 	// Set up merkle trees
@@ -277,6 +284,37 @@ describe("Console Credits Tests", function () {
 	
 	let balanceOfSecond = await creditsContract.balanceOf(whitelistPerson_2.address);
     console.log("Balance after receiving tokens: " + whitelistPerson_2.address + " is " + balanceOfSecond);
+	
+  });
+  
+  
+  it("Should mint and burn rokens via spender contract", async function () {
+	  
+	let claimingAddress = leafNodes[3]; // 2 is whitelistPerson_4
+	let hexProof = merkleTree.getHexProof(claimingAddress);
+	
+	console.log(merkleProofData[3]);
+	
+	let joinedObjects = vaultObjects.concat(upgradeObjects);
+	
+	console.log(joinedObjects);
+	
+	let mintTokens = await resolverContract.connect(whitelistPerson_4).mintTokens(hexProof, 1000, joinedObjects);
+	await mintTokens.wait();
+	
+	// Check balance of whitelistPerson_2 after the claim
+	let balanceOf = await creditsContract.balanceOf(whitelistPerson_4.address);
+    console.log("Balance of: " + whitelistPerson_4.address + " is " + ethers.utils.formatEther(balanceOf));
+	
+	// Spend tokens
+	var halfTheBalance = ethers.utils.formatEther(BigNumber.from(balanceOf).div(2)).toString();
+	
+	let spendTokens = await spenderContract.connect(whitelistPerson_4).burnTokens(Math.round(halfTheBalance));
+	await spendTokens.wait();
+	
+	let balanceOfAfterSpend = await creditsContract.balanceOf(whitelistPerson_4.address);
+	
+	console.log("Balance after spend for: " + whitelistPerson_4.address + " is " + ethers.utils.formatEther(balanceOfAfterSpend));
 	
   });
 	
